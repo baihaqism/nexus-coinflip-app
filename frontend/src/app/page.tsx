@@ -8,7 +8,6 @@ import {
   parseEther,
   formatEther,
   EventLog,
-  WebSocketProvider
 } from "ethers";
 
 const CONTRACT_ADDRESS = "0x80197D71018fA03AF7B095A96E9179c28f87c96C";
@@ -50,120 +49,11 @@ export default function Home() {
   } | null>(null);
   const [userBalance, setUserBalance] = useState<string>("0");
 
-  ;
-
-  const [userTransactions, setUserTransactions] = useState<
-    Array<{
-      hash: string;
-      timestamp: number;
-      betAmount: string;
-      win: boolean;
-      payout: string;
-    }>
-  >([]);
-
-  const [allTransactions, setAllTransactions] = useState<
-    Array<{
-      hash: string;
-      timestamp: number;
-      player: string;
-      betAmount: string;
-      win: boolean;
-      payout: string;
-    }>
-  >([]);
-
   useEffect(() => {
     if (signer) {
       checkOwnership();
     }
   }, [signer]);
-
-  const fetchTransactionHistory = useCallback(async () => {
-    if (!signer || !userAddress) return;
-
-    try {
-      const provider = signer.provider;
-      const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
-      const latestBlock = await provider.getBlockNumber();
-      const startBlock = Math.max(0, latestBlock - 1000);
-
-      const filter = contract.filters.FlipResult();
-      const events = await contract.queryFilter(
-        filter,
-        startBlock,
-        latestBlock
-      );
-
-      // Fetch block details to get timestamp
-      const processedAllTxs: Array<{
-        hash: string;
-        timestamp: number;
-        formattedDate: string;
-        player: string;
-        betAmount: string;
-        win: boolean;
-        payout: string;
-      }> = await Promise.all(
-        events.map(async (event) => {
-          const iface = contract.interface;
-          let parsed = null;
-
-          if (event instanceof EventLog) {
-            parsed = iface.parseLog(event);
-          } else if ("topics" in event) {
-            parsed = iface.parseLog({
-              topics: event.topics,
-              data: event.data,
-            });
-          }
-
-          if (!parsed) {
-            console.error("Could not parse event");
-            return null;
-          }
-
-          // Get block details to fetch timestamp
-          const block = await provider.getBlock(event.blockNumber);
-          const date = new Date((block?.timestamp || 0) * 1000);
-          const processedTx = {
-            hash: event.transactionHash,
-            timestamp: event.blockNumber,
-            formattedDate: date
-              .toLocaleString("en-US", {
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-                hour12: false,
-              })
-              .replace(",", ""), // Remove comma
-            player: parsed.args[0] as string,
-            betAmount: formatEther(parsed.args[2]),
-            win: Boolean(parsed.args[1]),
-            payout: formatEther(parsed.args[3]),
-          };
-
-          return processedTx;
-        })
-      )
-        .then((results) =>
-          results.filter((tx): tx is NonNullable<typeof tx> => tx !== null)
-        )
-        .then((txs) => txs.sort((a, b) => b.timestamp - a.timestamp));
-
-      const processedUserTxs = processedAllTxs.filter(
-        (tx) => tx.player.toLowerCase() === userAddress.toLowerCase()
-      );
-
-      setAllTransactions(processedAllTxs);
-      setUserTransactions(processedUserTxs);
-    } catch (error) {
-      console.error("Error fetching transaction history:", error);
-    }
-  }, [signer, userAddress]);
 
   const checkOwnership = async () => {
     if (!signer) return;
@@ -441,7 +331,6 @@ export default function Home() {
         const payout = formatEther(parsed.args[3]);
         setLastResult({ win, payout });
 
-        await fetchTransactionHistory();
       }
 
       await Promise.all([getContractBalance(), updateUserBalance()]);
@@ -452,12 +341,7 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    if (signer) {
-      fetchTransactionHistory();
-    }
-  }, [signer, fetchTransactionHistory]);
-
+  
   const formatAddress = (address: string) => {
     if (!address) return "";
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -675,18 +559,6 @@ export default function Home() {
                         </svg>
                       </a>
                     )}
-
-                    {/* {isConnected && isCorrectNetwork && (
-                      <div className="container mx-auto px-4 pb-20 flex justify-center">
-                        <div className="w-full max-w-2xl">
-                          <TransactionHistory
-                            transactions={allTransactions}
-                            title="All Transactions"
-                            showPlayer={true}
-                          />
-                        </div>
-                      </div>
-                    )} */}
                   </div>
                 </div>
               )}
