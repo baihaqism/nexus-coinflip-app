@@ -7,11 +7,9 @@ import {
   Contract,
   parseEther,
   formatEther,
-  EventLog,
-  WebSocketProvider
 } from "ethers";
 
-const CONTRACT_ADDRESS = "0x80197D71018fA03AF7B095A96E9179c28f87c96C";
+const CONTRACT_ADDRESS = "0x80197D71018fA03AF7B095A96E9179c28f87c96C"; // Replace with your contract address
 const CONTRACT_ABI = [
   "function flip() external payable returns (bool)",
   "function getBalance() external view returns (uint256)",
@@ -29,8 +27,11 @@ const EXPLORER_URL = "https://explorer.nexus.xyz";
 
 const BET_AMOUNTS = [1, 5, 10, 25, 50, 100];
 
+// Calculate max possible bet based on contract balance (considering 1.95x payout)
 const getMaxPossibleBet = (balance: string): number => {
-  return parseFloat(balance) / 1.95;
+  // Convert balance to number and divide by 1.95 to account for potential payout
+  const maxBet = parseFloat(balance) / 1.95;
+  return maxBet;
 };
 
 export default function Home() {
@@ -50,120 +51,11 @@ export default function Home() {
   } | null>(null);
   const [userBalance, setUserBalance] = useState<string>("0");
 
-  ;
-
-  const [userTransactions, setUserTransactions] = useState<
-    Array<{
-      hash: string;
-      timestamp: number;
-      betAmount: string;
-      win: boolean;
-      payout: string;
-    }>
-  >([]);
-
-  const [allTransactions, setAllTransactions] = useState<
-    Array<{
-      hash: string;
-      timestamp: number;
-      player: string;
-      betAmount: string;
-      win: boolean;
-      payout: string;
-    }>
-  >([]);
-
   useEffect(() => {
     if (signer) {
       checkOwnership();
     }
   }, [signer]);
-
-  const fetchTransactionHistory = useCallback(async () => {
-    if (!signer || !userAddress) return;
-
-    try {
-      const provider = signer.provider;
-      const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
-      const latestBlock = await provider.getBlockNumber();
-      const startBlock = Math.max(0, latestBlock - 1000);
-
-      const filter = contract.filters.FlipResult();
-      const events = await contract.queryFilter(
-        filter,
-        startBlock,
-        latestBlock
-      );
-
-      // Fetch block details to get timestamp
-      const processedAllTxs: Array<{
-        hash: string;
-        timestamp: number;
-        formattedDate: string;
-        player: string;
-        betAmount: string;
-        win: boolean;
-        payout: string;
-      }> = await Promise.all(
-        events.map(async (event) => {
-          const iface = contract.interface;
-          let parsed = null;
-
-          if (event instanceof EventLog) {
-            parsed = iface.parseLog(event);
-          } else if ("topics" in event) {
-            parsed = iface.parseLog({
-              topics: event.topics,
-              data: event.data,
-            });
-          }
-
-          if (!parsed) {
-            console.error("Could not parse event");
-            return null;
-          }
-
-          // Get block details to fetch timestamp
-          const block = await provider.getBlock(event.blockNumber);
-          const date = new Date((block?.timestamp || 0) * 1000);
-          const processedTx = {
-            hash: event.transactionHash,
-            timestamp: event.blockNumber,
-            formattedDate: date
-              .toLocaleString("en-US", {
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-                hour12: false,
-              })
-              .replace(",", ""), // Remove comma
-            player: parsed.args[0] as string,
-            betAmount: formatEther(parsed.args[2]),
-            win: Boolean(parsed.args[1]),
-            payout: formatEther(parsed.args[3]),
-          };
-
-          return processedTx;
-        })
-      )
-        .then((results) =>
-          results.filter((tx): tx is NonNullable<typeof tx> => tx !== null)
-        )
-        .then((txs) => txs.sort((a, b) => b.timestamp - a.timestamp));
-
-      const processedUserTxs = processedAllTxs.filter(
-        (tx) => tx.player.toLowerCase() === userAddress.toLowerCase()
-      );
-
-      setAllTransactions(processedAllTxs);
-      setUserTransactions(processedUserTxs);
-    } catch (error) {
-      console.error("Error fetching transaction history:", error);
-    }
-  }, [signer, userAddress]);
 
   const checkOwnership = async () => {
     if (!signer) return;
@@ -174,7 +66,6 @@ export default function Home() {
       setIsOwner(ownerAddress.toLowerCase() === userAddress.toLowerCase());
     } catch (error) {
       console.error("Error checking ownership:", error);
-      setIsOwner(false);
     }
   };
 
@@ -208,39 +99,37 @@ export default function Home() {
     }
   };
 
-  const WithdrawSection = () => {
-    if (!isOwner) return null;
-
-    return (
-      <div className="mt-8 p-4 border border-black/10 rounded-lg text-black">
-        <h2 className="text-xl font-medium mb-4 text-black">Owner Controls</h2>
-        <div className="flex items-center gap-4">
-          <input
-            type="number"
-            value={withdrawAmount}
-            onChange={(e) => setWithdrawAmount(e.target.value)}
-            placeholder="Amount in NEXUS"
-            className="px-4 py-2 border border-black/10 rounded-lg"
-          />
-          <button
-            onClick={handleWithdraw}
-            className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg
-                      hover:bg-gray-800 transition-colors duration-200"
-          >
-            Withdraw
-          </button>
-          <button
-            onClick={handleWithdrawAll}
-            className="px-4 py-2 text-sm font-medium text-black border border-black rounded-lg
-                      hover:bg-black/10 transition-colors duration-200"
-          >
-            Withdraw All
-          </button>
-        </div>
+  // Add this section to your JSX where appropriate
+  const withdrawSection = isOwner && (
+    <div className="mt-8 p-4 border border-black/10 rounded-lg text-black">
+      <h2 className="text-xl font-medium mb-4 text-black">Owner Controls</h2>
+      <div className="flex items-center gap-4">
+        <input
+          type="number"
+          value={withdrawAmount}
+          onChange={(e) => setWithdrawAmount(e.target.value)}
+          placeholder="Amount in NEXUS"
+          className="px-4 py-2 border border-black/10 rounded-lg"
+        />
+        <button
+          onClick={handleWithdraw}
+          className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg
+                    hover:bg-gray-800 transition-colors duration-200"
+        >
+          Withdraw
+        </button>
+        <button
+          onClick={handleWithdrawAll}
+          className="px-4 py-2 text-sm font-medium text-black border border-black rounded-lg
+                    hover:bg-black/10 transition-colors duration-200"
+        >
+          Withdraw All
+        </button>
       </div>
-    );
-  };
+    </div>
+  );
 
+  // Function to check and update user's balance
   const updateUserBalance = useCallback(async () => {
     if (!signer) return;
     try {
@@ -362,6 +251,7 @@ export default function Home() {
           setIsConnected(true);
           setUserAddress(accounts[0].address);
 
+          // Get initial balance
           const balance = await provider.getBalance(accounts[0].address);
           setUserBalance(formatEther(balance));
 
@@ -384,6 +274,7 @@ export default function Home() {
         setIsConnected(true);
         setUserAddress(accounts[0]);
 
+        // Get initial balance
         const balance = await provider.getBalance(accounts[0]);
         setUserBalance(formatEther(balance));
 
@@ -399,11 +290,12 @@ export default function Home() {
   const placeBet = async () => {
     if (!signer) return;
 
+    // Check if bet is still valid based on current contract balance and user balance
     const maxBet = getMaxPossibleBet(contractBalance);
     const userBetAmount = parseFloat(userBalance);
 
     if (selectedBet > maxBet) {
-      alert("This bet amount is no longer available due to dealer balance");
+      alert("This bet amount is no longer available due to contract balance");
       return;
     }
 
@@ -422,41 +314,28 @@ export default function Home() {
       });
       setLastTxHash(tx.hash);
 
+      // Wait for transaction and get event data
       const receipt = await tx.wait();
       const event = receipt.logs[0];
       const iface = contract.interface;
-
-      let parsed = null;
-      if (event instanceof EventLog) {
-        parsed = iface.parseLog(event);
-      } else if ("topics" in event) {
-        parsed = iface.parseLog({
-          topics: event.topics,
-          data: event.data,
-        });
-      }
+      const parsed = iface.parseLog(event);
 
       if (parsed) {
         const win = parsed.args[1];
         const payout = formatEther(parsed.args[3]);
         setLastResult({ win, payout });
-
-        await fetchTransactionHistory();
       }
 
-      await Promise.all([getContractBalance(), updateUserBalance()]);
+      await Promise.all([
+        getContractBalance(),
+        updateUserBalance()
+      ]);
     } catch (error) {
       console.error("Error flipping coin:", error);
     } finally {
       setIsFlipping(false);
     }
   };
-
-  useEffect(() => {
-    if (signer) {
-      fetchTransactionHistory();
-    }
-  }, [signer, fetchTransactionHistory]);
 
   const formatAddress = (address: string) => {
     if (!address) return "";
@@ -468,75 +347,8 @@ export default function Home() {
     return `${hash.slice(0, 6)}...${hash.slice(-4)}`;
   };
 
-  const TransactionHistory = ({
-    transactions,
-    title,
-    showPlayer = false,
-  }: {
-    transactions: any[];
-    title: string;
-    showPlayer?: boolean;
-  }) => (
-    <div className="mt-8 p-4 border border-black/10 rounded-lg overflow-x-auto text-black">
-      <h2 className="text-xl font-medium mb-4 text-black text-center">
-        {title}
-      </h2>
-      {transactions.length === 0 ? (
-        <p className="text-gray-500">No transactions found</p>
-      ) : (
-        <div className="w-full">
-          <table className="w-full text-sm whitespace-nowrap">
-            <thead>
-              <tr className="border-b">
-                <th className="p-2 text-left">Date & Time</th>
-                {showPlayer && <th className="p-2 text-left">Player</th>}
-                <th className="p-2 text-left">Tx Hash</th>
-                <th className="p-2 text-left">Bet Amount</th>
-                <th className="p-2 text-left">Result</th>
-                <th className="p-2 text-left">Payout</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((tx, index) => (
-                <tr
-                  key={index}
-                  className="border-b last:border-b-0 hover:bg-gray-50"
-                >
-                  <td className="p-2 text-gray-600">{tx.formattedDate}</td>
-                  {showPlayer && (
-                    <td className="p-2">{formatAddress(tx.player)}</td>
-                  )}
-                  <td className="p-2">
-                    <a
-                      href={`${EXPLORER_URL}/tx/${tx.hash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      {formatHash(tx.hash)}
-                    </a>
-                  </td>
-                  <td className="p-2">{tx.betAmount} NEXUS</td>
-                  <td
-                    className={`p-2 ${
-                      tx.win ? "text-green-600" : "text-red-600"
-                    }`}
-                  >
-                    {tx.win ? "Win" : "Loss"}
-                  </td>
-                  <td className="p-2">{tx.payout} NEXUS</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-  
-
   return (
-    <main className="min-h-screen bg-white relative">
+    <main className="h-screen bg-white relative flex flex-col">
       <div className="absolute top-4 right-4 px-4 py-2 rounded-full border border-black/10">
         <p className="text-sm font-medium text-black/80">
           {isConnected
@@ -547,17 +359,16 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex-1 flex items-center justify-center">
+        `
         <div className="max-w-4xl w-full px-4">
           <div className="space-y-12 text-center">
             <h1 className="text-5xl font-light tracking-tight text-black">
               Coin Flip Game
             </h1>
-
-            {isConnected && <WithdrawSection />}
-
+            {withdrawSection}
             <div className="text-lg text-gray-600">
-              Dealer Balance: {contractBalance} NEXUS
+              Contract Balance: {contractBalance} NEXUS
             </div>
 
             <div className="space-y-8">
@@ -585,11 +396,18 @@ export default function Home() {
                     {BET_AMOUNTS.map((amount) => {
                       const maxBet = getMaxPossibleBet(contractBalance);
                       const hasContractFunds = amount <= maxBet;
+                      // Compare as numbers with proper decimal handling
                       const userBalanceNum = parseFloat(userBalance);
                       const hasUserFunds =
                         !isNaN(userBalanceNum) && userBalanceNum >= amount;
                       const isEnabled = hasContractFunds && hasUserFunds;
 
+                      // Debug log to help track balance issues
+                      console.log(
+                        `Bet: ${amount}, User Balance: ${userBalance}, Has Funds: ${hasUserFunds}`
+                      );
+
+                      // Only show 1 NEXUS option if balance is around 5 NEXUS
                       if (parseFloat(contractBalance) <= 5 && amount > 1) {
                         return null;
                       }
@@ -675,18 +493,6 @@ export default function Home() {
                         </svg>
                       </a>
                     )}
-
-                    {/* {isConnected && isCorrectNetwork && (
-                      <div className="container mx-auto px-4 pb-20 flex justify-center">
-                        <div className="w-full max-w-2xl">
-                          <TransactionHistory
-                            transactions={allTransactions}
-                            title="All Transactions"
-                            showPlayer={true}
-                          />
-                        </div>
-                      </div>
-                    )} */}
                   </div>
                 </div>
               )}
@@ -695,14 +501,14 @@ export default function Home() {
         </div>
       </div>
 
-      <footer className="sticky bottom-0 w-full py-4 text-center text-black bg-white border-t">
+      <footer className="absolute bottom-0 w-full py-4 text-center bg-white">
         <a
           href="https://x.com/0xbaeee"
           target="_blank"
           rel="noopener noreferrer"
           className="text-sm text-gray-600 hover:text-black transition-colors duration-200"
         >
-          Created by @0xBaeee
+          Created by @0xbaeee
         </a>
       </footer>
     </main>

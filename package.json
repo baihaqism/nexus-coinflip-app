@@ -1,5 +1,5 @@
 {
-  "name": "nexus-counter-dapp",
+  "name": "nexus-coinflip-dapp",
   "version": "1.0.0",
   "private": true,
   "workspaces": [
@@ -7,7 +7,8 @@
     "frontend"
   ],
   "scripts": {
-    "frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "frontend": "cd frontend && npm run start",
     "deploy": "cd contracts && npx hardhat run scripts/deploy.ts --network nexus"
   }
 } 

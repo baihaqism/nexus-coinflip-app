@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  const Counter = await ethers.getContractFactory("Counter");
+  const Counter = await ethers.getContractFactory("CoinFlip");
   const counter = await Counter.deploy();
 
   await counter.waitForDeployment();
