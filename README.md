@@ -1,159 +1,110 @@
-# Nexus Testnet Counter App
+# Nexus Coinflip DApp
 
-A simple decentralized application (dApp) built with Next.js that interacts with a counter smart contract on the Nexus Testnet.
+A decentralized coin flip game built on the Nexus blockchain. This application allows users to place bets and engage in a simple yet exciting betting game, leveraging the power of smart contracts and the unique features of the Nexus ecosystem.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Smart Contract](#smart-contract)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Overview
 
-This project demonstrates a basic integration between a web application and the Nexus blockchain. It features a smart contract that maintains a counter which can only be incremented, showcasing fundamental blockchain interactions like:
-- Smart contract deployment and interaction
-- Wallet connection
-- Transaction signing
-- Event listening
-- State updates
+The Nexus Coinflip DApp is designed to provide a fun and engaging way for users to interact with the Nexus blockchain. Players can place bets on the outcome of a coin flip, with the potential for payouts based on their bets. The app showcases the capabilities of the Nexus Layer 1 blockchain and zkVM technology.
 
-## Prerequisites
+## Features
 
-- Node.js (v18 or higher)
-- MetaMask browser extension
-- NEX for gas fees (get from the Nexus faucet)
-- A code editor (VS Code or Cursor recommended)
+- **Smart Contract Functionality**: 
+  - Validates bets against predefined amounts.
+  - Randomized outcomes using secure methods.
+  - Payout mechanism for winning bets.
+  - Owner controls for fund management.
 
-## Getting Testnet NEX
+- **User-Friendly Frontend**: 
+  - Wallet connection and network switching.
+  - Display of dealer and user balances.
+  - Real-time feedback on bet outcomes.
+  - Transaction tracking with links to the Nexus blockchain explorer.
 
-To interact with the Nexus testnet, you'll need testnet NEX tokens for gas fees. These can be obtained from the Nexus Testnet Faucet at https://hub.nexus.xyz.
+## Getting Started
 
-## Smart Contract Details
-
-The Counter smart contract (`contracts/src/Counter.sol`) implements:
-- A private counter variable
-- An increment function that adds 1 to the counter
-- A getter function to read the current count
-- An event emission after each increment
-
-The current Counter contract is deployed to the Nexus testnet at address `0x6DDc7dd77CbeeA3445b70CB04E0244BBa245e011`. See the code below for the contract's source code.
-
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-contract Counter {
-    uint256 private count;
-    
-    event CountIncremented(uint256 newCount);
-    
-    function increment() public {
-        count += 1;
-        emit CountIncremented(count);
-    }
-    
-    function getCount() public view returns (uint256) {
-        return count;
-    }
-}
-```
-
-## Installation & Setup
-
-1. Clone and install dependencies:
-```bash
-git clone <this-repo-url>
-cd your-repo
-npm install
-```
-
-2. Deploy the smart contract:
-```bash
-cd contracts
-npx hardhat run scripts/deploy.ts --network nexus
-```
-
-3. Configure the frontend:
-Configure the frontend to use the deployed contract address on Nexus.
-
-Modify the `frontend/src/app/page.tsx` file to use the deployed contract address:
-
-```typescript
-const CONTRACT_ADDRESS = 'your_deployed_contract_address' // You'll need to update this after deploying to Nexus
-```
-
-1. Start the NextJS development server:
-
-```bash
-cd frontend
-npm run dev
-```
-
-## Using the dApp
-
-1. Connect Your Wallet:
-   - Ensure MetaMask is installed
-   - Switch to the Nexus testnet network
-   - Click "Connect Wallet" in the dApp
-   - Approve the connection in MetaMask
-
-2. Interact with the Counter:
-   - View the current count
-   - Click "Increment Counter" to increase the value
-   - Confirm the transaction in MetaMask
-   - Wait for transaction confirmation
-   - See the updated count
-
-## Technology Stack
-
-### Frontend
-- Next.js 13+ (React framework)
-- TypeScript for type safety
-- Tailwind CSS for styling
-- ethers.js for blockchain interaction
-- web3modal for wallet connection
-
-### Blockchain
-- Network: Nexus Testnet
-- Smart Contract Language: Solidity ^0.8.0
-- Contract Framework: Hardhat
-- Contract Interaction: ethers.js
-
-## Common Issues & Solutions
-
-1. Transaction Failures:
-   - Ensure you have enough NEX for gas
-   - Check if MetaMask is connected to Nexus testnet
-
-2. Wallet Connection Issues:
-   - Try refreshing the page
-   - Ensure MetaMask is unlocked
-   - Clear browser cache if persistent
-
-## Development
+To get started with the Nexus Coinflip DApp, follow the instructions below to set up the project locally.
 
 ### Project Structure
-```
-this-repo/
-├── contracts/
-│   └── contracts/
-│       └── Counter.sol
-├── frontend/
-│   ├── pages/
-│   │   └── index.tsx
-│   └── package.json
-└── package.json
-```
 
-### Local Development
-1. Make code changes
-2. Test contracts with `npx hardhat test`
-3. Deploy to Nexus testnet
-4. Test frontend with `npm run dev`
-5. Ensure MetaMask is connected to Nexus testnet
+The project is organized into two main workspaces:
+
+- **contracts**: Contains the smart contract code and deployment scripts.
+- **frontend**: Contains the React application for the user interface.
+
+### Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/baihaqism/nexus-coinflip-dapp.git
+   cd nexus-coinflip-dapp
+   ```
+
+2. **Install dependencies**:
+   Make sure you have [Node.js](https://nodejs.org/) installed. Then run:
+   ```bash
+   npm install
+   ```
+
+### Usage
+
+1. **Deploy the Smart Contract**:
+   Navigate to the `contracts` directory and deploy the smart contract to the Nexus network:
+   ```bash
+   npm run deploy
+   ```
+
+2. **Start the Frontend**:
+   Navigate to the `frontend` directory and start the development server:
+   ```bash
+   npm run frontend
+   ```
+
+3. **Open your browser**:
+   Navigate to `http://localhost:3000` to access the application.
+
+4. **Connect your wallet**:
+   Use a compatible wallet (like Rabbit) to connect to the Nexus network.
+
+5. **Place your bets**:
+   Select a valid bet amount and click "Flip Coin" to participate in the game.
+
+## Smart Contract
+
+The smart contract for the coin flip game is located in the `contracts` directory. It implements the core logic for betting, determining outcomes, and managing funds.
+
+### Key Functions
+
+- `flip()`: Allows users to place a bet and flip the coin.
+- `withdraw(uint256 amount)`: Allows the owner to withdraw a specified amount.
+- `withdrawAll()`: Allows the owner to withdraw all funds from the contract.
+- `getBalance()`: Returns the current balance of the contract.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit changes
-4. Push to the branch
-5. Open a pull request
+Contributions are welcome! If you would like to contribute to the Nexus Coinflip DApp, please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch for your feature or bug fix.
+3. Make your changes and commit them.
+4. Push your changes to your forked repository.
+5. Create a pull request to the main repository.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+Thank you for checking out the Nexus Coinflip DApp! We hope you enjoy playing and exploring the capabilities of the Nexus blockchain.
